@@ -32,12 +32,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         application.statusBarStyle = .lightContent
         //There is no way to change the status bar background color except this
-        let statusBarBackgroundView = UIView()
-        statusBarBackgroundView.backgroundColor = UIColor.rgb(red: 194, green: 31, blue: 31)
         
-        window?.addSubview(statusBarBackgroundView)
-        window?.addConstarintWithFormat(format: "H:|[v0]|", views: statusBarBackgroundView)
-        window?.addConstarintWithFormat(format: "V:|[v0(35)]", views: statusBarBackgroundView)
+        guard let statusBar = UIApplication.shared.value(forKeyPath: "statusBarWindow.statusBar") as? UIView else { return false }
+        statusBar.backgroundColor = UIColor.rgb(red: 194, green: 31, blue: 31)
+
+        
+
         
         return true
     }
