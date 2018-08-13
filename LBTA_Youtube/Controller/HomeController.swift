@@ -10,19 +10,14 @@ import UIKit
 
 class HomeController: UICollectionViewController, UICollectionViewDelegateFlowLayout {
     
-    var videos : [Video]?
     
-    func fetchVideos(){
-        ApiService.sharedInstance.fetchVideos { (videos) in
-            self.videos = videos
-            self.collectionView?.reloadData()
-        }
-    }
+    let cellId = "cellId"
+    let titles = ["Home", "Trending", "Subscription", "Account"]
+    
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        fetchVideos()
-        
         navigationController?.navigationBar.isTranslucent = false
         //The only way to move the title label to the sides 
         let titleLabel = UILabel(frame: CGRect(x: 0, y: 0, width: view.frame.width - 32 , height: view.frame.height))
@@ -31,15 +26,24 @@ class HomeController: UICollectionViewController, UICollectionViewDelegateFlowLa
         titleLabel.font = UIFont.systemFont(ofSize: 20)
         navigationItem.titleView = titleLabel
         
-        collectionView?.backgroundColor = UIColor.white
-        //Registering a cell class with collection view 
-        collectionView?.register(VideoCell.self ,forCellWithReuseIdentifier: "cellId" )
-        collectionView?.contentInset = UIEdgeInsets(top: 50, left: 0, bottom: 0, right: 0)
-        collectionView?.scrollIndicatorInsets = UIEdgeInsets(top: 50, left: 0, bottom: 0, right: 0)
+        setupCollectionView()
         setupMenuBar()
         setupNavBarButtons()
     }
     
+    
+    func setupCollectionView(){
+        if let flowLayout = collectionView?.collectionViewLayout as? UICollectionViewFlowLayout {
+            flowLayout.scrollDirection = .horizontal
+            flowLayout.minimumLineSpacing = 0
+        }
+        collectionView?.backgroundColor = UIColor.white
+        //Registering a cell class with collection view
+        collectionView?.register(FeedCell.self, forCellWithReuseIdentifier: cellId)
+        collectionView?.contentInset = UIEdgeInsets(top: 50, left: 0, bottom: 0, right: 0)
+        collectionView?.scrollIndicatorInsets = UIEdgeInsets(top: 50, left: 0, bottom: 0, right: 0)
+        collectionView?.isPagingEnabled = true
+    }
     
     func setupNavBarButtons(){
          
@@ -78,10 +82,26 @@ class HomeController: UICollectionViewController, UICollectionViewDelegateFlowLa
     
     @objc func handleSearch(){
         
+        scrollToMenuIndex(menuIndex: 2)
+        
     }
     
-    let menuBar : MenuBar = {
+    func scrollToMenuIndex(menuIndex: Int){
+        let indexPath = IndexPath(item: menuIndex, section: 0)
+        collectionView?.scrollToItem(at: indexPath, at: .init(rawValue: 0), animated: true)
+        setTitleForIndex(index: menuIndex)
+        
+    }
+    
+    private func setTitleForIndex(index: Int) {
+        if let titleLabel = navigationItem.titleView as? UILabel {
+            titleLabel.text = " \(titles[index])"
+        }
+    }
+    
+    lazy var menuBar : MenuBar = {
         let mb = MenuBar()
+        mb.homeController = self
         return mb
     }()
     
@@ -98,27 +118,36 @@ class HomeController: UICollectionViewController, UICollectionViewDelegateFlowLa
         view.addConstarintWithFormat(format: "H:|[v0]|", views: menuBar)
         view.addConstarintWithFormat(format: "V:[v0(50)]", views: menuBar)
         
-        menuBar.topAnchor.constraint(equalTo: topLayoutGuide.bottomAnchor).isActive = true
-    }
-
- 
-    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return videos?.count ?? 0
-    }
-    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cellId", for: indexPath) as! VideoCell
-       cell.video = videos?[indexPath.row]
-        return cell
+        menuBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor).isActive = true
     }
     
+    override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        menuBar.horizontalBarLeftAncorConstraint?.constant = scrollView.contentOffset.x / 4
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return 4
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellId, for: indexPath)
+        return cell
+    }
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        
-        let height = (view.frame.width - 16 - 16) * 9 / 16
-        return CGSize(width: self.view.frame.width, height: height + 16 + 88)
+        return CGSize(width: self.view.frame.width, height: self.view.frame.height - 65)
     }
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
-        return 0
+    
+   
+    
+    override func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        let index = Int(targetContentOffset.pointee.x / self.view.frame.width)
+        let indexPath = IndexPath(item: index, section: 0)
+        menuBar.collectionView.selectItem(at: indexPath, animated: true, scrollPosition: .centeredHorizontally)
+        setTitleForIndex(index: index)
     }
+
+
+    
     
 
 }
